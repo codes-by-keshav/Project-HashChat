@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-exo;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-dancing;
+  }
+}
+
+.gradient-text {
+  background: linear-gradient(
+    to right,
+    #4f9a9f 20%,
+    #3C6E71 30%,
+    #284B63 70%,
+    #4f9a9f 80%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shine 5s linear infinite;
+  display: inline-block;
+  
+  /* Bevel effect */
+
+  
+  /* Enhance the 3D effect with a subtle transformation */
+  transform: perspective(500px) rotateX(10deg);
+  transition: transform 0.3s ease;
+}
+
+.gradient-text:hover {
+  transform: perspective(500px) rotateX(0deg);
+}
+
+@layer components {
+  .custom-range {
+    @apply appearance-none bg-gray-200 h-2 rounded-lg;
+  }
+
+  .custom-range::-webkit-slider-thumb {
+    @apply appearance-none w-6 h-3 bg-[#3c6e71] rounded-full cursor-ew-resize;
+    -webkit-appearance: none;
+  }
+
+  .custom-range::-moz-range-thumb {
+    @apply w-6 h-6 bg-[#3c6e71] rounded-full cursor-pointer border-none;
+  }
+
+  .custom-range::-ms-thumb {
+    @apply w-6 h-6 bg-[#3c6e71] rounded-full cursor-pointer;
+  }
+}

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="description" content="Description of the page">
+  <meta name="keywords" content="keyword1, keyword2">
+  <meta name="author" content="Author Name">
+  <link rel="icon" href="img/hashtag-icon.png" type="image/logo-icon">
+  <link rel="stylesheet" href="css/style1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
+  <title>HashChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+
+  <nav class="bg-[#f0f0f0] p-4">
+    <div class="container mx-auto">
+      <div class="flex justify-between items-center">
+        <a href="index.html" class="flex items-center space-x-3 z-20">
+          <img src="img/hashtag-icon.png" alt="HashChat Logo" class="w-10 h-10">
+          <span class="text-[#4f9a9f] font-bold text-xl gradient-text-nav">HashChat</span>
+        </a>
+        <!-- Hamburger menu checkbox -->
+        <label for="menu-toggle" class="cursor-pointer lg:hidden block z-20">
+          <svg class="w-6 h-6 text-[#353535]" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+          </svg>
+        </label>
+        <input type="checkbox" id="menu-toggle" class="hidden">
+        <!-- Navigation links -->
+        <div class="hidden lg:flex lg:items-center lg:w-auto w-full" id="menu">
+          <nav>
+            <ul class="lg:flex items-center justify-between text-base text-[#FFFFFF] pt-4 lg:pt-0">
+              <li><a href="#" class="lg:p-4 py-3 px-0 block hover:text-[#3C6E71] transition duration-300">Download</a>
+              </li>
+              <li><a href="#how-to-use" class="lg:p-4 py-3 px-0 block hover:text-[#3C6E71] transition duration-300">How
+                  to
+                  Use</a></li>
+              <li><a href="about.html" class="lg:p-4 py-3 px-0 block hover:text-[#3C6E71] transition duration-300">About</a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <section class="bg-[#f0f0f0] py-12">
+    <div class="ccontainer ml-12 mr-8 px-2">
+      <div class="flex flex-col md:flex-row items-center">
+        <!-- Left side: Introduction text -->
+        <div class="md:w-1/2 mb-8 md:mb-0">
+          <h1 class="main-heading gradient-text mb-4">HashChat</h1>
+          <p class="sub-heading text-gray-600">a blockchain based chat application for improved security</p>
+        </div>
+
+        <!-- Right side: GIF collage -->
+        <div class="md:w-1/2 relative ipad-container">
+          <div class="ipad-screen">
+            <img src="img/speech-bubble.gif" alt="Chat GIF 1" class="gif-item">
+            <img src="img/chat.gif" alt="Chat GIF 2" class="gif-item">
+            <img src="img/emoji.gif" alt="Chat GIF 3" class="gif-item">
+            <img src="img/favorite.gif" alt="Chat GIF 4" class="gif-item">
+            <img src="img/forum.gif" alt="Chat GIF 5" class="gif-item">
+            <img src="img/heart.gif" alt="Chat GIF 6" class="gif-item">
+            <img src="img/lock.gif" alt="Chat GIF 7" class="gif-item">
+            <img src="img/speech-bubble_zzz.gif" alt="Chat GIF 8" class="gif-item">
+            <img src="img/thx.gif" alt="Chat GIF 9" class="gif-item">
+            <img src="img/laugh.gif" alt="Chat GIF 10" class="gif-item">
+            <img src="img/dialog.gif" alt="Chat GIF 11" class="gif-item">
+            <img src="img/idea.gif" alt="Chat GIF 12" class="gif-item">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+
+
+  <section id="features" class="features-section bg-[#f0f0f0] py-12">
+    <div class="container mx-auto px-4">
+      <h2 class="text-center mb-8 large-heading gradient-text no-bevel">Features</h2>
+
+      <div class="feature-container">
+        <div class="feature-card " data-feature="1">
+          <div class="feature-image-container">
+            <img src="img/feature3.png" alt="Feature 1" class="feature-image">
+          </div>
+          <div class="feature-icon">📀</div>
+          <div class="feature-content">
+            <h3 class="feature-title" ; style="font-size: 32px;">End-to-End Encryption</h3>
+            <p class="feature-description" ; style="font-size: 18px;">Employing advanced end-to-end encryption, our
+              blockchain chat app guarantees the utmost security and privacy for your conversations.</p>
+
+          </div>
+
+
+        </div>
+        <div class="feature-card" data-feature="2">
+          <div class="feature-image-container">
+            <img src="img/feature2.gif" alt="Feature 2" class="feature-image">
+          </div>
+          <div class="feature-icon">📀</div>
+          <div class="feature-content">
+            <h3 class="feature-title" ; style="font-size: 32px;">Security</h3>
+            <p class="feature-description" ; style="font-size: 18px;">Utilizing advanced encryption, our blockchain chat
+              app ensures unparalleled security and privacy for every conversation.</p>
+
+          </div>
+        </div>
+        <div class="feature-card active" data-feature="3">
+          <div class="feature-image-container">
+            <img src="img/feature1.png" alt="Feature 3" class="feature-image">
+          </div>
+          <div class="feature-icon">📀</div>
+          <div class="feature-content">
+            <h3 class="feature-title" ; style="font-size: 32px;">Decentralized Storage</h3>
+            <p class="feature-description" ; style="font-size: 18px;">Your conversations are decentralized and
+              distributed across global nodes for enhanced security and privacy.</p>
+          </div>
+
+        </div>
+        <div class="feature-card" data-feature="4">
+          <div class="feature-image-container">
+            <img src="img/feature4.gif" alt="Feature 4" class="feature-image">
+          </div>
+          <div class="feature-icon">📀</div>
+          <div class="feature-content">
+            <h3 class="feature-title" ; style="font-size: 32px;">Private Keys</h3>
+            <p class="feature-description" ; style="font-size: 18px;">Using private keys in blockchain-based chat apps
+              ensures that only authorized users can access and decrypt their messages, significantly enhancing security
+              and privacy.</p>
+
+          </div>
+        </div>
+        <div class="feature-card" data-feature="5">
+          <div class="feature-image-container">
+            <img src="img/feature5.png" alt="Feature 5" class="feature-image">
+          </div>
+          <div class="feature-icon">📀</div>
+          <div class="feature-content">
+            <h3 class="feature-title" ; style="font-size: 32px;">Anonymity</h3>
+            <p class="feature-description" ; style="font-size: 18px;">Blockchain-based chat apps provide anonymity by
+              allowing users to communicate without revealing their real identities.</p>
+
+          </div>
+        </div>
+        <div class="feature-card" data-feature="6">
+          <div class="feature-image-container">
+            <img src="img/feature6.gif" alt="Feature 6" class="feature-image">
+          </div>
+          <div class="feature-icon">📀</div>
+          <div class="feature-content">
+            <h3 class="feature-title" ; style="font-size: 32px;">Speed</h3>
+            <p class="feature-description" ; style="font-size: 18px;">Experience blazing-fast messaging with minimal
+              latency in blockchain-based chat apps.</p>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+
+  <script>
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const featureCards = document.querySelectorAll('.feature-card');
+
+      featureCards.forEach(card => {
+        card.addEventListener('click', () => {
+          featureCards.forEach(c => c.classList.remove('active'));
+          card.classList.add('active');
+        });
+      });
+    });
+  </script>
+
+</body>
+
+</html>

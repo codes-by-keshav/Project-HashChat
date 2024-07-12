@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="description" content="Description of the page">
+  <meta name="keywords" content="keyword1, keyword2">
+  <meta name="author" content="Author Name">
+  <link rel="icon" href="img/hashtag-icon.png" type="image/logo-icon">
+  <link rel="stylesheet" href="css/style1.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <style>
+    /* Button styles */
+    .btn {
+      display: inline-block;
+      padding: 15px 30px;
+      font-size: 24px;
+      color: rgb(34, 40, 49);
+      background-color: rgb(0, 173, 181); /* Teal color */
+      text-align: center;
+      text-decoration: none;
+      border-radius: 20px;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition for hover effects */
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add subtle shadow */
+      position: relative; /* Required for the shine effect */
+      overflow: hidden; /* Hide the shine overflow */
+    }
+
+    /* Shine effect */
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 100%;
+      height: 200%;
+      background: linear-gradient(125deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 40%);
+      transform: translateX(-100%) translateY(-50%) rotate(25deg);
+      transition: transform 0.5s ease;
+    }
+
+    /* Hover effect */
+    .btn:hover {
+      background-color: rgb(57, 62, 70); /* Dark grey color on hover */
+      color: white; /* Ensure the text color contrasts with the new background */
+    }
+
+    /* Shine effect on hover */
+    .btn:hover::before {
+      transform: translateX(100%) translateY(-50%) rotate(25deg);
+    }
+  </style>
+  <title>HashChat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+
+  <nav class="bg-[#f0f0f0] p-4">
+    <div class="container mx-auto">
+      <div class="flex justify-between items-center">
+        <a href="index.html" class="flex items-center space-x-3 z-20">
+          <img src="img/hashtag-icon.png" alt="HashChat Logo" class="w-10 h-10">
+          <span class="text-[#4f9a9f] font-bold text-xl gradient-text-nav">HashChat</span>
+        </a>
+        <!-- Hamburger menu checkbox -->
+        <label for="menu-toggle" class="cursor-pointer lg:hidden block z-20">
+          <svg class="w-6 h-6 text-[#353535]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+          </svg>
+        </label>
+        <input type="checkbox" id="menu-toggle" class="hidden">
+        <!-- Navigation links -->
+        <div class="hidden lg:flex lg:items-center lg:w-auto w-full" id="menu">
+          <nav>
+            <ul class="lg:flex items-center justify-between text-base text-[#FFFFFF] pt-4 lg:pt-0">
+              <li><a href="#" class="lg:p-4 py-3 px-0 block hover:text-[#3C6E71] transition duration-300">Download</a></li>
+              <li><a href="#how-to-use" class="lg:p-4 py-3 px-0 block hover:text-[#3C6E71] transition duration-300">How to Use</a></li>
+              <li><a href="about.html" class="lg:p-4 py-3 px-0 block hover:text-[#3C6E71] transition duration-300">About</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- About Section -->
+  <section id="about" class="py-20 text-center">
+    <div class="container mx-auto px-4 py-4">
+        <h1 class="gradient-text no-bevel text-8xl font-bold ">About Me</h1>
+        <p class="mt-4 text-lg text-[#284B63] leading-relaxed max-w-4xl mx-auto">I am a motivated and diligent developer committed to crafting a chat application 
+            that prioritizes message privacy between sender and receiver, ensuring confidentiality from
+             external entities such as governmental bodies and server administrators.</p>
+        
+        <!-- Image link for Visit Our Website -->
+        <a href="/very_basic/index.html" target="_blank" class="inline-block mt-8 ">
+            <img src="img/web-browser.gif" alt="Visit Our Website" class="w-32">
+        </a>
+    </div>
+</section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="bg-[#f0f0f0] ">
+    <div class="container mx-auto px-4">
+      <div class="flex justify-center">
+        <a class="btn" href="mailto:keshavanandverma03@gmail.com">Contact me</a>
+      </div>
+    </div>
+  </section>
+
+</body>
+
+</html>
