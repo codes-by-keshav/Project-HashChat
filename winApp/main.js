@@ -53,6 +53,12 @@ function generateKeys(allocatedStorage) {
   const privateKey = wallet.privateKey;
   const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
   const address = keccak256(publicKey).slice(-20);
+  console.log("Generated keys:", {
+    privateKey: bytesToHex(privateKey),
+    publicKey: bytesToHex(publicKey),
+    address: "0x" + bytesToHex(address),
+    mnemonic: mnemonic,
+  });
 
   return {
     privateKey: bytesToHex(privateKey),
@@ -70,6 +76,12 @@ function deriveKeysFromMnemonic(mnemonic) {
   const privateKey = wallet.privateKey;
   const publicKey = secp256k1.getPublicKey(privateKey, false).slice(1);
   const address = keccak256(publicKey).slice(-20);
+  console.log("Derived keys:", {
+    privateKey: bytesToHex(privateKey),
+    publicKey: bytesToHex(publicKey),
+    address: "0x" + bytesToHex(address),
+    mnemonic: mnemonic,
+  });
 
   return {
     privateKey: bytesToHex(privateKey),
