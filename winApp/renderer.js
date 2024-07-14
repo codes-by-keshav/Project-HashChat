@@ -22,6 +22,10 @@ function updateStorageSizeDisplay() {
 
 function showAccountChoiceButtons() {
   console.log("showAccountChoiceButtons called");
+  const existingButtons = document.getElementById("accountChoiceButtons");
+  if (existingButtons) {
+    existingButtons.remove();
+  }
   const choiceButtons = document.createElement("div");
   choiceButtons.innerHTML = `
       <button id="newAccountBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300 mr-2">Create New Account</button>
@@ -97,9 +101,7 @@ allocateBtn.addEventListener("click", async () => {
   if (result.success) {
     resultDiv.textContent += ` File created at: ${result.path}`;
     manualSelectionLink.style.display = "none";
-    if (result.needAccountChoice) {
-      showAccountChoiceButtons();
-    }
+    
   } else {
     manualSelectionLink.style.display = "block";
   }

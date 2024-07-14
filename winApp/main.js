@@ -79,36 +79,6 @@ function deriveKeysFromMnemonic(mnemonic) {
   };
 }
 
-function createMnemonicWindow(mnemonic) {
-  console.log("Creating mnemonic window with mnemonic:", mnemonic);
-
-  let mnemonicWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
-    parent: mainWindow,
-    modal: true,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname, "preload.js"),
-    },
-  });
-  console.log("Loading mnemonic.html");
-
-  mnemonicWindow.loadFile("mnemonic.html");
-
-  mnemonicWindow.webContents.on("did-finish-load", () => {
-    console.log("Sending mnemonic data to window"); // Add this log
-
-    mnemonicWindow.webContents.send("mnemonic-data", mnemonic);
-  });
-  //mnemonicWindow.webContents.openDevTools(); // Add this line to open DevTools
-
-  mnemonicWindow.on("closed", () => {
-    mnemonicWindow = null;
-  });
-}
-
 async function checkStorageIntegrity() {
   if (!storageFilePath || !allocatedStorage) {
     console.log("Storage not initialized yet");
@@ -118,27 +88,17 @@ async function checkStorageIntegrity() {
   try {
     const stats = await fs.stat(storageFilePath);
     const isValid = stats.size === allocatedStorage * 1024 * 1024;
-
+    
     if (!isValid) {
       console.warn("Storage file size mismatch");
       return false;
     }
-
-    // Optional: Check file hash to detect modifications
-    const fileBuffer = await fs.readFile(storageFilePath);
-    const fileHash = crypto
-      .createHash("sha256")
-      .update(fileBuffer)
-      .digest("hex");
-    const storedHash = storageStore.get("storageHash");
-
-    if (storedHash && fileHash !== storedHash) {
-      console.warn("Storage file content has been modified");
-      return false;
-    }
-
     return true;
   } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.warn("Storage file does not exist yet");
+      return false;
+    }
     console.error("Error checking storage integrity:", error);
     return false;
   }
@@ -147,12 +107,17 @@ async function checkStorageIntegrity() {
 let storageCheckInterval;
 
 function startStorageIntegrityCheck() {
-  storageCheckInterval = setInterval(async () => {
-    const isIntact = await checkStorageIntegrity();
-    if (!isIntact) {
-      mainWindow.webContents.send("storage-integrity-lost");
-    }
-  }, 5000); // Check every 5 seconds
+  if (storageCheckInterval) {
+    clearInterval(storageCheckInterval);
+  }
+  if (storageFilePath && allocatedStorage) {
+    storageCheckInterval = setInterval(async () => {
+      const isIntact = await checkStorageIntegrity();
+      if (!isIntact) {
+        mainWindow.webContents.send('storage-integrity-lost');
+      }
+    }, 5000); // Check every minute
+  }
 }
 
 function stopStorageIntegrityCheck() {
@@ -196,13 +161,6 @@ ipcMain.handle("allocate-storage", async (event, size) => {
       return { success: false, message: "Directory selection cancelled." };
     }
 
-    const fileBuffer = await fs.readFile(storageFilePath);
-    const fileHash = crypto
-      .createHash("sha256")
-      .update(fileBuffer)
-      .digest("hex");
-    storageStore.set("storageHash", fileHash);
-
     const selectedDir = result.filePaths[0];
     const hashchatDir = path.join(selectedDir, "HashChat-Storage");
 
@@ -213,7 +171,9 @@ ipcMain.handle("allocate-storage", async (event, size) => {
       .toString("hex")}.hcbdb`;
     storageFilePath = path.join(hashchatDir, uniqueFileName);
 
+    // Use writeFile instead of openSync and write
     await fs.writeFile(storageFilePath, Buffer.alloc(size * 1024 * 1024));
+    
     allocatedStorage = size;
     storageStore.delete("keys");
 
@@ -224,7 +184,6 @@ ipcMain.handle("allocate-storage", async (event, size) => {
       success: true,
       message: "Storage allocated successfully.",
       path: storageFilePath,
-      needAccountChoice: true,
     };
   } catch (error) {
     console.error("Storage allocation failed:", error);
@@ -266,18 +225,13 @@ ipcMain.handle("verify-storage", async (event) => {
       // Always clear existing keys and prompt for account choice
       storageStore.delete("keys");
       console.log("Existing keys cleared, returning needAccountChoice: true");
-
-      const fileBuffer = await fs.readFile(storageFilePath);
-      const fileHash = crypto
-        .createHash("sha256")
-        .update(fileBuffer)
-        .digest("hex");
-      storageStore.set("storageHash", fileHash);
+      
+      // Start the storage integrity check after successful verification
+      startStorageIntegrityCheck();
 
       return {
         success: true,
-        message:
-          "Storage verified successfully. Choose to create new account or login to existing.",
+        message: "Storage verified successfully. Choose to create new account or login to existing.",
         path: storageFilePath,
         needAccountChoice: true,
       };
@@ -394,12 +348,6 @@ ipcMain.handle("manual-file-selection", async (event) => {
       message: "File verification failed: " + error.message,
     };
   }
-});
-
-ipcMain.handle("show-mnemonic", (_, mnemonic) => {
-  console.log("Received request to show mnemonic");
-
-  createMnemonicWindow(mnemonic);
 });
 
 ipcMain.handle("get-address", () => {
