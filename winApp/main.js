@@ -128,7 +128,7 @@ function startStorageIntegrityCheck() {
       if (!isIntact) {
         mainWindow.webContents.send('storage-integrity-lost');
       }
-    }, 5000); // Check every minute
+    }, 5000); // Check every 5s
   }
 }
 
@@ -191,6 +191,8 @@ ipcMain.handle("allocate-storage", async (event, size) => {
 
     storageStore.set("storageFilePath", storageFilePath);
     storageStore.set("allocatedStorage", allocatedStorage);
+    storageStore.set("fileAssociated", false);  // Reset the file association
+
 
     return {
       success: true,
@@ -222,30 +224,30 @@ ipcMain.handle("verify-storage", async (event) => {
     console.log("No storage has been allocated yet");
     return {
       success: false,
-      message: "No storage has been allocated yet.",
-      needManualSelection: true,
+      message: "No storage has been allocated yet. Please allocate storage first.",
+      needAllocation: true,
     };
   }
 
   try {
     const stats = await fs.stat(storageFilePath);
     const isValid = stats.size === allocatedStorage * 1024 * 1024;
+    const isFileAssociated = storageStore.get("fileAssociated", false);
 
     console.log("Storage file validity:", isValid);
 
     if (isValid) {
-      // Always clear existing keys and prompt for account choice
-      storageStore.delete("keys");
-      console.log("Existing keys cleared, returning needAccountChoice: true");
-      
       // Start the storage integrity check after successful verification
       startStorageIntegrityCheck();
 
       return {
         success: true,
-        message: "Storage verified successfully. Choose to create new account or login to existing.",
+        message: isFileAssociated 
+          ? "Storage verified successfully. Please login to your existing account." 
+          : "Storage verified successfully. Choose to create new account or login to existing.",
         path: storageFilePath,
         needAccountChoice: true,
+        onlyAllowLogin: isFileAssociated,
       };
     } else {
       console.log("Storage file is invalid");
@@ -256,6 +258,19 @@ ipcMain.handle("verify-storage", async (event) => {
       };
     }
   } catch (error) {
+    if (error.code === 'ENOENT') {
+      // File doesn't exist, reset storage settings
+      storageStore.delete("storageFilePath");
+      storageStore.delete("allocatedStorage");
+      storageStore.delete("fileAssociated");
+      storageStore.delete("keys");
+      
+      return {
+        success: false,
+        message: "Storage file not found. Please allocate new storage.",
+        needAllocation: true,
+      };
+    }
     console.error("Storage verification failed:", error);
     return {
       success: false,
@@ -266,10 +281,20 @@ ipcMain.handle("verify-storage", async (event) => {
 });
 
 ipcMain.handle("choose-account", async (event, choice, mnemonic = null) => {
+  const isFileAssociated = storageStore.get("fileAssociated", false);
+
   if (choice === "new") {
+    if (isFileAssociated) {
+      return {
+        success: false,
+        message: "This storage file is already associated with an account. Please use 'Login to Existing Account'.",
+      };
+    }
+
     try {
       const keys = generateKeys(allocatedStorage);
       storageStore.set("keys", { ...keys, filePath: storageFilePath });
+      storageStore.set("fileAssociated", true);
       console.log("New account created with mnemonic:", keys.mnemonic);
       return {
         success: true,
@@ -291,13 +316,14 @@ ipcMain.handle("choose-account", async (event, choice, mnemonic = null) => {
         ...keys,
         filePath: storageFilePath,
         mnemonic: mnemonic,
-      }); // Store mnemonic
+      });
+      storageStore.set("fileAssociated", true);
       console.log("Logged in with existing account, address:", keys.address);
       return {
         success: true,
         message: "Logged in to existing account successfully.",
         address: keys.address,
-        mnemonic: mnemonic, // Return mnemonic
+        mnemonic: mnemonic,
       };
     } catch (error) {
       console.error("Failed to derive keys from mnemonic:", error);

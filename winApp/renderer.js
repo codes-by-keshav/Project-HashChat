@@ -20,22 +20,33 @@ function updateStorageSizeDisplay() {
   storageSizeDisplay.textContent = `${storageSizes[index]} MB`;
 }
 
-function showAccountChoiceButtons() {
+function showAccountChoiceButtons(onlyAllowLogin = false) {
   console.log("showAccountChoiceButtons called");
   const existingButtons = document.getElementById("accountChoiceButtons");
   if (existingButtons) {
     existingButtons.remove();
   }
   const choiceButtons = document.createElement("div");
-  choiceButtons.innerHTML = `
+  choiceButtons.id = "accountChoiceButtons";
+  
+  if (onlyAllowLogin) {
+    choiceButtons.innerHTML = `
+      <button id="existingAccountBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300">Login to Existing Account</button>
+    `;
+  } else {
+    choiceButtons.innerHTML = `
       <button id="newAccountBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300 mr-2">Create New Account</button>
       <button id="existingAccountBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300">Login to Existing Account</button>
     `;
+  }
+  
   resultDiv.after(choiceButtons);
 
-  document
-    .getElementById("newAccountBtn")
-    .addEventListener("click", () => chooseAccount("new"));
+  if (!onlyAllowLogin) {
+    document
+      .getElementById("newAccountBtn")
+      .addEventListener("click", () => chooseAccount("new"));
+  }
   document
     .getElementById("existingAccountBtn")
     .addEventListener("click", promptMnemonic);
@@ -51,6 +62,11 @@ async function chooseAccount(choice, mnemonic = null) {
       showMnemonicBtn.style.display = 'block';
     }
     openChatBtn.style.display = 'block';
+    // Remove account choice buttons after successful account creation/login
+    const accountChoiceButtons = document.getElementById("accountChoiceButtons");
+    if (accountChoiceButtons) {
+      accountChoiceButtons.remove();
+    }
   } else {
     resultDiv.textContent = result.message;
     resultDiv.className = 'text-red-600';
@@ -101,10 +117,14 @@ allocateBtn.addEventListener("click", async () => {
   if (result.success) {
     resultDiv.textContent += ` File created at: ${result.path}`;
     manualSelectionLink.style.display = "none";
-    
+    showAccountChoiceButtons(false);  // Allow both new account creation and login
+    allocateBtn.style.display = "none";
+    storageSize.style.display = "none";
+    storageSizeDisplay.style.display = "none";
   } else {
     manualSelectionLink.style.display = "block";
   }
+  verifyBtn.style.display = "block";
 });
 
 verifyBtn.addEventListener("click", async () => {
@@ -114,26 +134,37 @@ verifyBtn.addEventListener("click", async () => {
   resultDiv.textContent = result.message;
   resultDiv.className = result.success ? "text-green-600" : "text-red-600";
 
-  if (result.success) {
-    resultDiv.textContent += ` Verified file at: ${result.path}`;
-    manualSelectionLink.style.display = "none";
+  // Hide all buttons and inputs initially
+  allocateBtn.style.display = "none";
+  verifyBtn.style.display = "none";
+  storageSize.style.display = "none";
+  storageSizeDisplay.style.display = "none";
+  manualSelectionLink.style.display = "none";
+  openChatBtn.style.display = "none";
+  addressContainer.style.display = "none";
 
+  if (result.success) {
+    if (result.path) {
+      resultDiv.textContent += ` Verified file at: ${result.path}`;
+    }
     if (result.needAccountChoice) {
       console.log("Showing account choice buttons");
-      showAccountChoiceButtons();
+      showAccountChoiceButtons(result.onlyAllowLogin);
     } else if (result.address) {
       console.log("Showing address:", result.address);
       showAddress(result.address);
       openChatBtn.style.display = "block";
     }
   } else {
-    console.log("Verification failed");
-    openChatBtn.style.display = "none";
-    if (result.needManualSelection) {
+    if (result.needAllocation) {
+      allocateBtn.style.display = "block";
+      storageSize.style.display = "block";
+      storageSizeDisplay.style.display = "block";
+    } else if (result.needManualSelection) {
       manualSelectionLink.style.display = "block";
     }
-    addressContainer.style.display = "none";
   }
+  verifyBtn.style.display = "block";
 });
 
 showMnemonicBtn.addEventListener('click', async () => {
