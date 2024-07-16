@@ -13,7 +13,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -21,22 +20,8 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// Message represents a single chat message
-type Message struct {
-	Sender      string `json:"sender"`
-	Receiver    string `json:"receiver"`
-	Content     string `json:"content"`
-	RequestTime int64  `json:"request_time"`
-	Encrypted   []byte `json:"encrypted"`
-	Priority    int    `json:"priority"`
-}
-
-// MessageMetadata represents the non-sensitive information about a message
-type MessageMetadata struct {
-	Sender      string `json:"sender"`
-	Receiver    string `json:"receiver"`
-	RequestTime int64  `json:"request_time"`
-}
+// const MaxBlockSize = 10 * 1024 * 1024 // 10 MB in bytes when file sharing will be added
+const MaxBlockSize = 5 * 1024 // 5 KB in bytes
 
 // Block represents a block in the blockchain
 type Block struct {
@@ -45,19 +30,33 @@ type Block struct {
 	Messages     []MessageMetadata `json:"messages"`
 	PreviousHash string            `json:"previous_hash"`
 	Hash         string            `json:"hash"`
+	Size         int               `json:"size"`
 }
 
 // Blockchain manages the chain of blocks and pending messages
 type Blockchain struct {
-	mu                 sync.RWMutex
-	chain              []Block
-	pendingMessages    []Message
-	maxBlockSize       int
-	minBlockSize       int
-	messageWaitTimeout time.Duration
-	messageChan        chan Message
-	encryptionQueue    chan Message
-	encryptionKey      string
+	mu              sync.RWMutex
+	chain           []Block
+	pendingMessages []Message
+	messageChan     chan Message
+	encryptionQueue chan Message
+	encryptionKey   string
+}
+
+// Message represents a single chat message
+type Message struct {
+	Sender      string `json:"sender"`
+	Receiver    string `json:"receiver"`
+	Content     string `json:"content"`
+	RequestTime int64  `json:"request_time"`
+	Encrypted   []byte `json:"encrypted"`
+}
+
+// MessageMetadata represents the non-sensitive information about a message
+type MessageMetadata struct {
+	Sender      string `json:"sender"`
+	Receiver    string `json:"receiver"`
+	RequestTime int64  `json:"request_time"`
 }
 
 type Config struct {
@@ -84,7 +83,7 @@ func loadConfig() (*Config, error) {
 var blockchain *Blockchain
 
 // NewBlockchain creates a new blockchain with a genesis block
-func NewBlockchain(maxBlockSize, minBlockSize int, messageWaitTimeout time.Duration, encryptionKey string) *Blockchain {
+func NewBlockchain(encryptionKey string) *Blockchain {
 	genesisMetadata := []MessageMetadata{
 		{Sender: "Admin", Receiver: "All", RequestTime: time.Now().Unix()},
 	}
@@ -97,102 +96,46 @@ func NewBlockchain(maxBlockSize, minBlockSize int, messageWaitTimeout time.Durat
 	}
 	genesisBlock.Hash = calculateBlockHash(genesisBlock)
 	bc := &Blockchain{
-		chain:              []Block{genesisBlock},
-		maxBlockSize:       maxBlockSize,
-		minBlockSize:       minBlockSize,
-		messageWaitTimeout: messageWaitTimeout,
-		messageChan:        make(chan Message, 1000),
-		encryptionQueue:    make(chan Message, 1000),
-		encryptionKey:      encryptionKey,
+		chain:           []Block{genesisBlock},
+		messageChan:     make(chan Message, 1000),
+		encryptionQueue: make(chan Message, 1000),
+		encryptionKey:   encryptionKey,
 	}
 
 	go bc.processMessages()
 	go bc.encryptMessages()
-	go bc.startPriorityIncrease()
-	go bc.autoMineBlocks()
-
 	return bc
 }
 
-func (bc *Blockchain) mineBlock() {
-	bc.mu.Lock()
-	if len(bc.pendingMessages) < bc.minBlockSize {
-		bc.mu.Unlock()
-		return // Not enough messages to mine
-	}
-
-	messagesToMine := bc.pendingMessages
-	blockSize := len(messagesToMine)
-	if blockSize > bc.maxBlockSize {
-		blockSize = bc.maxBlockSize
-		messagesToMine = messagesToMine[:blockSize]
-	}
-
-	// Sort messages by priority
-	sort.Slice(messagesToMine, func(i, j int) bool {
-		return messagesToMine[i].Priority > messagesToMine[j].Priority
-	})
-
-	messageMetadata := make([]MessageMetadata, len(messagesToMine))
-	for i, msg := range messagesToMine {
-		messageMetadata[i] = MessageMetadata{
-			Sender:      msg.Sender,
-			Receiver:    msg.Receiver,
-			RequestTime: msg.RequestTime,
-		}
-	}
-	bc.mu.Unlock()
-
+func (bc *Blockchain) mineBlock(messages []Message) {
 	newBlock := Block{
 		Index:        len(bc.chain),
 		Timestamp:    time.Now().Unix(),
-		Messages:     messageMetadata,
+		Messages:     make([]MessageMetadata, len(messages)),
 		PreviousHash: bc.getLatestBlock().Hash,
 		Hash:         "",
 	}
 
-	// Perform computationally expensive operations without holding the lock
-	newBlock.Hash = calculateBlockHash(newBlock)
-
-	// Re-lock to update the blockchain
-	bc.mu.Lock()
-	defer bc.mu.Unlock()
-	bc.chain = append(bc.chain, newBlock)
-	// Clear processed messages
-	bc.pendingMessages = bc.pendingMessages[blockSize:]
-
-	fmt.Printf("Block mined: %d with %d messages\n", newBlock.Index, len(messagesToMine))
-}
-
-func (bc *Blockchain) autoMineBlocks() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			bc.mu.Lock()
-			shouldMine := false
-			if len(bc.pendingMessages) >= bc.minBlockSize {
-				shouldMine = true
-				for i := range bc.pendingMessages[:bc.minBlockSize] {
-					if time.Since(time.Unix(bc.pendingMessages[i].RequestTime, 0)) > bc.messageWaitTimeout {
-						shouldMine = true
-						break
-					}
-				}
-			}
-			bc.mu.Unlock()
-			if shouldMine {
-				bc.mineBlock()
-			}
+	blockSize := 0
+	for i, msg := range messages {
+		newBlock.Messages[i] = MessageMetadata{
+			Sender:      msg.Sender,
+			Receiver:    msg.Receiver,
+			RequestTime: msg.RequestTime,
 		}
+		blockSize += estimateMessageSize(msg)
 	}
+	newBlock.Size = blockSize
+
+	newBlock.Hash = calculateBlockHash(newBlock)
+	bc.chain = append(bc.chain, newBlock)
+
+	fmt.Printf("Block mined: %d with %d messages, size: %d bytes\n", newBlock.Index, len(messages), newBlock.Size)
 }
 
 // calculateBlockHash calculates the SHA256 hash of a block
 func calculateBlockHash(block Block) string {
-	record := fmt.Sprintf("%d%d%v", block.Index, block.Timestamp, block.PreviousHash)
+	record := fmt.Sprintf("%d%d%v%s%d", block.Index, block.Timestamp, block.Messages, block.PreviousHash, block.Size)
 	h := sha3.New256()
 	h.Write([]byte(record))
 	hashed := h.Sum(nil)
@@ -214,12 +157,7 @@ func (bc *Blockchain) processMessages() {
 	for msg := range bc.messageChan {
 		bc.mu.Lock()
 		bc.pendingMessages = append(bc.pendingMessages, msg)
-		if len(bc.pendingMessages) >= bc.maxBlockSize {
-			bc.mu.Unlock() // Unlock before mining
-			bc.mineBlock()
-		} else {
-			bc.mu.Unlock()
-		}
+		bc.mu.Unlock()
 	}
 }
 
@@ -259,41 +197,40 @@ func (bc *Blockchain) encryptMessage(message string) []byte {
 	return ciphertext
 }
 
-// submitMessages submits multiple messages to the blockchain
 func (bc *Blockchain) submitMessages(messages []Message) {
-	fmt.Printf("Starting to submit %d messages\n", len(messages))
-	for i, msg := range messages {
-		select {
-		case bc.encryptionQueue <- msg:
-			fmt.Printf("Message %d added to encryption queue\n", i)
-		default:
-			fmt.Println("Encryption queue full, mining block")
-			bc.mineBlock()            // Mine block without holding the lock
-			bc.encryptionQueue <- msg // Try again after mining
+	currentSize := 0
+	var blockMessages []Message
+
+	for _, msg := range messages {
+		messageSize := estimateMessageSize(msg)
+		if currentSize+messageSize > MaxBlockSize {
+			// Mine the current block
+			bc.mineBlock(blockMessages)
+			fmt.Println("Mined a block by submit messages 1")
+			// Reset for the next block
+			blockMessages = []Message{}
+			currentSize = 0
 		}
+		blockMessages = append(blockMessages, msg)
+		currentSize += messageSize
 	}
-	fmt.Println("All messages submitted")
+
+	// Mine any remaining messages
+	if len(blockMessages) > 0 {
+		bc.mineBlock(blockMessages)
+		fmt.Println("Mined a block by submit messages 2")
+	}
 }
 
-// startPriorityIncrease starts a goroutine to periodically increase message priorities
-func (bc *Blockchain) startPriorityIncrease() {
-	ticker := time.NewTicker(500 * time.Millisecond)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			bc.mu.Lock()
-			currentTime := time.Now().Unix()
-			for i := range bc.pendingMessages {
-				message := &bc.pendingMessages[i]
-				messageAge := currentTime - message.RequestTime
-				halfSecondMilliseconds := int64(500)
-				message.Priority = int(messageAge / halfSecondMilliseconds)
-			}
-			bc.mu.Unlock()
-		}
+func estimateMessageSize(msg Message) int {
+	// Basic size estimation
+	size := len(msg.Sender) + len(msg.Receiver) + 8 // 8 bytes for timestamp
+	if msg.Encrypted != nil {
+		size += len(msg.Encrypted)
+	} else {
+		size += len(msg.Content)
 	}
+	return size
 }
 
 // Handler function to handle message submission via JSON
@@ -374,14 +311,10 @@ func handleGetBlockchainInfo(w http.ResponseWriter, r *http.Request) {
 		Length          int         `json:"length"`
 		Blocks          []BlockInfo `json:"blocks"`
 		PendingMessages int         `json:"pending_messages"`
-		MaxBlockSize    int         `json:"max_block_size"`
-		MinBlockSize    int         `json:"min_block_size"`
 	}{
 		Length:          len(blockchain.chain),
 		Blocks:          blockInfos,
 		PendingMessages: len(blockchain.pendingMessages),
-		MaxBlockSize:    blockchain.maxBlockSize,
-		MinBlockSize:    blockchain.minBlockSize,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -448,13 +381,10 @@ func main() {
 		return
 	}
 	port := flag.String("port", "8080", "server port")
-	maxBlockSize := flag.Int("maxBlockSize", 100, "maximum number of messages per block")
-	minBlockSize := flag.Int("minBlockSize", 1, "minimum number of messages per block")
 
-	messageWaitTimeout := flag.Duration("messageWaitTimeout", 10*time.Second, "message wait timeout before mining a block")
 	flag.Parse()
 
-	blockchain = NewBlockchain(*maxBlockSize, *minBlockSize, *messageWaitTimeout, config.EncryptionKey)
+	blockchain = NewBlockchain(config.EncryptionKey)
 
 	http.HandleFunc("/submit", handleMessageSubmission)
 	http.HandleFunc("/blockchain_info", handleGetBlockchainInfo)
