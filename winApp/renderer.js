@@ -1,216 +1,197 @@
-//rendere.js
+// renderer.js
 
-const allocateBtn = document.getElementById("allocateBtn");
-const verifyBtn = document.getElementById("verifyBtn");
-const openChatBtn = document.getElementById("openChatBtn");
-const resultDiv = document.getElementById("result");
-const storageSize = document.getElementById("storageSize");
-const storageSizeDisplay = document.getElementById("storageSizeDisplay");
-const manualSelectionLink = document.getElementById("manualSelectionLink");
-const addressDisplay = document.getElementById("addressDisplay");
-const mnemonicDisplay = document.getElementById("mnemonicDisplay");
-const keyInfoDiv = document.getElementById("keyInfo");
-const addressContainer = document.getElementById("addressContainer");
-const showMnemonicBtn = document.getElementById("showMnemonicBtn");
+document.addEventListener("DOMContentLoaded", () => {
+  const elements = {
+    storageSize: document.getElementById("storageSize"),
+    storageSizeDisplay: document.getElementById("storageSizeDisplay"),
+    allocateBtn: document.getElementById("allocateBtn"),
+    resultDiv: document.getElementById("result"),
+    addressDisplay: document.getElementById("addressDisplay"),
+    openChatBtn: document.getElementById("openChatBtn"),
+    showMnemonicBtn: document.getElementById("showMnemonicBtn"),
+    mnemonicDisplay: document.getElementById("mnemonicDisplay"),
+    mnemonicInput: document.getElementById("mnemonicInput"),
+    submitMnemonicBtn: document.getElementById("submitMnemonicBtn"),
+    resetAccountBtn: document.getElementById("resetAccountBtn"),
+    createAccountBtn: document.getElementById("createAccountBtn"),
+    mnemonicContainer: document.getElementById("mnemonicContainer"),
+    addressContainer: document.getElementById("addressContainer"),
+    storageAllocator: document.getElementById("storageAllocator")
 
-const storageSizes = [500, 700, 1000, 1500, 2000];
+  };
 
-function updateStorageSizeDisplay() {
-  const index = parseInt(storageSize.value);
-  storageSizeDisplay.textContent = `${storageSizes[index]} MB`;
-}
+  const storageSizes = [500, 700, 1000, 1500, 2000];
 
-function showAccountChoiceButtons(onlyAllowLogin = false) {
-  console.log("showAccountChoiceButtons called");
-  const existingButtons = document.getElementById("accountChoiceButtons");
-  if (existingButtons) {
-    existingButtons.remove();
+  function updateStorageSizeDisplay() {
+    elements.storageSizeDisplay.textContent = `${storageSizes[elements.storageSize.value]} MB`;
   }
-  const choiceButtons = document.createElement("div");
-  choiceButtons.id = "accountChoiceButtons";
-  
-  if (onlyAllowLogin) {
-    choiceButtons.innerHTML = `
-      <button id="existingAccountBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300">Login to Existing Account</button>
-    `;
-  } else {
-    choiceButtons.innerHTML = `
-      <button id="newAccountBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300 mr-2">Create New Account</button>
-      <button id="existingAccountBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300">Login to Existing Account</button>
-    `;
+
+  function showAddress(address) {
+    elements.addressDisplay.value = address;
+    elements.addressContainer.style.display = 'block';
   }
-  
-  resultDiv.after(choiceButtons);
 
-  if (!onlyAllowLogin) {
-    document
-      .getElementById("newAccountBtn")
-      .addEventListener("click", () => chooseAccount("new"));
-  }
-  document
-    .getElementById("existingAccountBtn")
-    .addEventListener("click", promptMnemonic);
-}
-
-async function chooseAccount(choice, mnemonic = null) {
-  console.log("Choosing account:", choice);
-  const result = await window.electronAPI.chooseAccount(choice, mnemonic);
-  if (result.success) {
-    showAddress(result.address);
-    if (result.mnemonic) {
-      window.currentMnemonic = result.mnemonic;
-      showMnemonicBtn.style.display = 'block';
-    }
-    openChatBtn.style.display = 'block';
-    // Remove account choice buttons after successful account creation/login
-    const accountChoiceButtons = document.getElementById("accountChoiceButtons");
-    if (accountChoiceButtons) {
-      accountChoiceButtons.remove();
-    }
-  } else {
-    resultDiv.textContent = result.message;
-    resultDiv.className = 'text-red-600';
-  }
-}
-
-function promptMnemonic() {
-    const mnemonicInput = document.createElement('textarea');
-    mnemonicInput.placeholder = "Enter your 12-word mnemonic phrase";
-    mnemonicInput.className = "w-full p-2 border rounded mb-2";
-    const submitButton = document.createElement('button');
-    submitButton.textContent = "Submit";
-    submitButton.className = "bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300";
-    
-    const container = document.createElement('div');
-    container.appendChild(mnemonicInput);
-    container.appendChild(submitButton);
-    
-    resultDiv.after(container);
-
-    submitButton.addEventListener('click', () => {
-        const mnemonic = mnemonicInput.value.trim();
-        if (mnemonic) {
-            chooseAccount('existing', mnemonic);
-            container.remove();
-        } else {
-            alert("Please enter a valid mnemonic phrase.");
-        }
-    });
-}
-
-function showAddress(address) {
-  addressDisplay.value = address;
-  addressDisplay.style.display = "block";
-  addressContainer.style.display = "block";
-}
-
-storageSize.addEventListener("input", updateStorageSizeDisplay);
-
-// Initial display update
-updateStorageSizeDisplay();
-
-allocateBtn.addEventListener("click", async () => {
-  const size = storageSizes[parseInt(storageSize.value)];
-  const result = await window.electronAPI.allocateStorage(size);
-  resultDiv.textContent = result.message;
-  resultDiv.className = result.success ? "text-green-600" : "text-red-600";
-  if (result.success) {
-    resultDiv.textContent += ` File created at: ${result.path}`;
-    manualSelectionLink.style.display = "none";
-    showAccountChoiceButtons(false);  // Allow both new account creation and login
-    allocateBtn.style.display = "none";
-    storageSize.style.display = "none";
-    storageSizeDisplay.style.display = "none";
-  } else {
-    manualSelectionLink.style.display = "block";
-  }
-  verifyBtn.style.display = "block";
-});
-
-verifyBtn.addEventListener("click", async () => {
-  console.log("Verify button clicked");
-  const result = await window.electronAPI.verifyStorage();
-  console.log("Verification result:", result);
-  resultDiv.textContent = result.message;
-  resultDiv.className = result.success ? "text-green-600" : "text-red-600";
-
-  // Hide all buttons and inputs initially
-  allocateBtn.style.display = "none";
-  verifyBtn.style.display = "none";
-  storageSize.style.display = "none";
-  storageSizeDisplay.style.display = "none";
-  manualSelectionLink.style.display = "none";
-  openChatBtn.style.display = "none";
-  addressContainer.style.display = "none";
-
-  if (result.success) {
-    if (result.path) {
-      resultDiv.textContent += ` Verified file at: ${result.path}`;
-    }
-    if (result.needAccountChoice) {
-      console.log("Showing account choice buttons");
-      showAccountChoiceButtons(result.onlyAllowLogin);
-    } else if (result.address) {
-      console.log("Showing address:", result.address);
-      showAddress(result.address);
-      openChatBtn.style.display = "block";
-    }
-  } else {
-    if (result.needAllocation) {
-      allocateBtn.style.display = "block";
-      storageSize.style.display = "block";
-      storageSizeDisplay.style.display = "block";
-    } else if (result.needManualSelection) {
-      manualSelectionLink.style.display = "block";
-    }
-  }
-  verifyBtn.style.display = "block";
-});
-
-showMnemonicBtn.addEventListener('click', async () => {
-  let mnemonic = window.currentMnemonic;
-  if (!mnemonic) {
-    mnemonic = await window.electronAPI.getMnemonic();
-  }
-  if (mnemonic) {
-    mnemonicDisplay.textContent = mnemonic;
-    mnemonicDisplay.style.display = 'block';
-  } else {
-    mnemonicDisplay.textContent = 'No mnemonic available.';
-    mnemonicDisplay.style.display = 'block';
-  }
-});
-
-manualSelectionLink.addEventListener("click", async () => {
-  const result = await window.electronAPI.manualFileSelection();
-  resultDiv.textContent = result.message;
-  resultDiv.className = result.success ? "text-green-600" : "text-red-600";
-
-  if (result.success) {
-    resultDiv.textContent += ` Verified file at: ${result.path}`;
-    manualSelectionLink.style.display = "none";
-
-    if (result.needAccountChoice) {
-      showAccountChoiceButtons();
+  async function allocateStorage() {
+    const size = storageSizes[elements.storageSize.value];
+    console.log("Allocating storage:", size, "MB");
+    const result = await window.electronAPI.allocateStorage(size);
+    if (result.success) {
+      elements.resultDiv.textContent = `Storage allocated: ${size} MB`;
+      elements.resultDiv.className = "text-green-600";
+      
+      if (result.existingUser) {
+        showMnemonicInput();
+      } else {
+        showCreateAccountButton();
+      }
     } else {
-      showAddress(result.address);
-      openChatBtn.style.display = "block";
+      elements.resultDiv.textContent = result.message;
+      elements.resultDiv.className = "text-red-600";
     }
-  } else {
-    openChatBtn.style.display = "none";
-    manualSelectionLink.style.display = "block";
-    addressContainer.style.display = "none";
   }
-});
 
-window.electronAPI.onStorageIntegrityLost(() => {
-  resultDiv.textContent = "Storage integrity check failed. Please verify your storage.";
-  resultDiv.className = "text-red-600";
-  verifyBtn.style.display = "block";
-  openChatBtn.style.display = "none";
-  addressContainer.style.display = "none";
-});
+  async function createNewAccount() {
+    console.log("Creating new account");
+    try {
+      const result = await window.electronAPI.createNewAccount();
+      if (result.success) {
+        showAddress(result.address);
+        elements.mnemonicDisplay.textContent = result.mnemonic;
+        elements.resultDiv.textContent = "New account created successfully.";
+        elements.resultDiv.className = "text-green-600";
+        showAccountControls();
+      } else {
+        elements.resultDiv.textContent = result.message;
+        elements.resultDiv.className = "text-red-600";
+      }
+    } catch (error) {
+      console.error("Error creating new account:", error);
+      elements.resultDiv.textContent = "Failed to create new account: " + error.message;
+      elements.resultDiv.className = "text-red-600";
+    }
+  }
 
-openChatBtn.addEventListener("click", () => {
-  window.electronAPI.openChatWebapp();
+  async function submitMnemonic() {
+    const mnemonic = elements.mnemonicInput.value.trim();
+    console.log("Submitting mnemonic");
+    if (mnemonic) {
+      const result = await window.electronAPI.submitMnemonic(mnemonic);
+      if (result.success) {
+        showAddress(result.address);
+        elements.resultDiv.textContent = "Login successful.";
+        elements.resultDiv.className = "text-green-600";
+        showAccountControls();
+      } else {
+        elements.resultDiv.textContent = result.message;
+        elements.resultDiv.className = "text-red-600";
+      }
+    }
+  }
+
+  async function resetAccount() {
+    console.log("Resetting account");
+    const confirm = window.confirm(
+      "Are you sure you want to reset your account? This will delete all your data and cannot be undone."
+    );
+    if (confirm) {
+      const result = await window.electronAPI.resetAccount();
+      if (result.success) {
+        resetUI();
+        elements.resultDiv.textContent = "Account reset successfully.";
+        elements.resultDiv.className = "text-green-600";
+      } else {
+        elements.resultDiv.textContent = "Failed to reset account. Please try again.";
+        elements.resultDiv.className = "text-red-600";
+      }
+    }
+  }
+
+  function showMnemonicInput() {
+    elements.mnemonicContainer.style.display = 'block';
+    elements.createAccountBtn.style.display = 'none';
+    elements.submitMnemonicBtn.textContent = 'Login to existing';
+    elements.mnemonicInput.value = ''; 
+  elements.mnemonicInput.focus();
+  }
+
+  function showCreateAccountButton() {
+    elements.createAccountBtn.style.display = 'block';
+    elements.mnemonicContainer.style.display = 'none';
+  }
+
+  function showAccountControls() {
+    elements.createAccountBtn.style.display = 'none';
+    elements.mnemonicContainer.style.display = 'none';
+    elements.showMnemonicBtn.style.display = 'block';
+    elements.openChatBtn.style.display = 'block';
+    elements.storageAllocator.style.display = 'none';
+    elements.addressContainer.style.display = 'block';
+  }
+
+  function resetUI() {
+    elements.addressDisplay.value = "";
+    elements.mnemonicInput.value = "";
+    elements.mnemonicDisplay.textContent = "";
+    elements.createAccountBtn.style.display = 'none';
+    elements.mnemonicContainer.style.display = 'none';
+    elements.showMnemonicBtn.style.display = 'none';
+    elements.openChatBtn.style.display = 'none';
+    elements.addressContainer.style.display = 'none';
+    elements.storageAllocator.style.display = 'block';
+  }
+
+  // Event Listeners
+  elements.storageSize.addEventListener("input", updateStorageSizeDisplay);
+  elements.allocateBtn.addEventListener("click", allocateStorage);
+  elements.createAccountBtn.addEventListener("click", createNewAccount);
+  elements.submitMnemonicBtn.addEventListener("click", submitMnemonic);
+  elements.resetAccountBtn.addEventListener("click", resetAccount);
+
+  elements.showMnemonicBtn.addEventListener("click", async () => {
+    console.log("Show Mnemonic button clicked");
+    const mnemonic = await window.electronAPI.getMnemonic();
+    console.log("Received mnemonic:", mnemonic);
+    if (mnemonic) {
+      elements.mnemonicDisplay.textContent = mnemonic;
+      elements.mnemonicDisplay.style.display = 'block';
+    } else {
+      elements.mnemonicDisplay.textContent = "No mnemonic available.";
+      elements.mnemonicDisplay.style.display = 'block';
+    }
+  });
+
+  elements.openChatBtn.addEventListener("click", () => {
+    window.electronAPI.openChatWebapp();
+  });
+
+  // Initialize
+  updateStorageSizeDisplay();
+  resetUI();
+
+  // Handle initial app state
+  window.electronAPI.onPromptMnemonic(async (event, existingUser, storageFileExists, hasValidMnemonic) => {
+    console.log("Initial app state:", { existingUser, storageFileExists, hasValidMnemonic });
+    if (existingUser) {
+      showMnemonicInput();
+      if (!storageFileExists) {
+        elements.resultDiv.textContent = "Storage file not found. Please allocate storage again.";
+        elements.resultDiv.className = "text-blue-600";
+      }
+    } else if (!storageFileExists) {
+      elements.resultDiv.textContent = "Please allocate storage first.";
+      elements.resultDiv.className = "text-blue-600";
+    }
+  });
+
+  window.electronAPI.onStorageFileDeleted(() => {
+    console.log("Storage file deleted");
+    resetUI();
+    elements.resultDiv.textContent = "Storage file was deleted. Please allocate storage again.";
+    elements.resultDiv.className = "text-red-600";
+  });
+
+  window.electronAPI.onAccountReset(() => {
+    console.log("Account reset");
+    resetUI();
+  });
 });

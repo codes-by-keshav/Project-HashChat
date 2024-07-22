@@ -24,17 +24,22 @@
                 <input type="range" id="storageSize" min="0" max="4" step="1" class="w-full custom-range">
                 <span id="storageSizeDisplay" class="ml-2 w-20 text-center"></span>
             </div>
-            <div class="flex justify-between">
+            <div class="flex justify-center">
                 <button id="allocateBtn"
-                    class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300">Allocate
+                    class="bg-[#284863] text-white py-2 px-4 mx-2 rounded hover:bg-[#192e3f] transition duration-300">Allocate
                     Storage</button>
-                <button id="verifyBtn"
-                    class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300">Verify
-                    Storage</button>
+                    <button id="resetAccountBtn" class="bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition duration-300 ">
+                        Reset Account
+                      </button>
             </div>
         </div>
-        <a href="#" id="manualSelectionLink" class="text-blue-500 hover:text-blue-700 text-sm mt-2 block text-center" style="display: none;">Locate file manually</a>
-        <p class="text-gray-600 mb-4 text-center text-base">Press 'Verify Storage' if already allocated</p>
+        <button id="createAccountBtn"
+                    class="bg-[#284863] text-white py-2 px-4 mx-2 rounded hover:bg-[#192e3f] transition duration-300">Create New Account</button>
+
+        <div id="mnemonicContainer" class="mb-4">
+            <textarea id="mnemonicInput" placeholder="Enter your 12-word mnemonic phrase" class="w-full p-2 border rounded mb-2"></textarea>
+            <button id="submitMnemonicBtn" class="bg-[#284863] text-white py-2 px-4 rounded hover:bg-[#192e3f] transition duration-300">Submit Mnemonic</button>
+        </div>
         <div id="result" class="text-center mb-4"></div>
         <div id="addressContainer" class="mb-4" style="display: none;">
             <p>Your public address:</p>
